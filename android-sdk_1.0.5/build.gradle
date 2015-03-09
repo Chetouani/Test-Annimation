@@ -1,0 +1,2 @@
+configurations.create("default")
+artifacts.add("default", file('android-sdk_1.0.5.jar'))
