@@ -10,4 +10,54 @@
         android:layout_height="fill_parent"
         android:id="@+id/img"/>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/x"
+        android:textSize="16dp"
+        android:gravity="right"
+        android:text="-----------"
+        android:layout_alignTop="@+id/img"
+        android:layout_alignEnd="@+id/img" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/t"
+        android:textSize="16dp"
+        android:gravity="right"
+        android:text="-----------"
+        android:layout_below="@+id/x"
+        android:layout_alignStart="@+id/w" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/w"
+        android:textSize="16dp"
+        android:gravity="right"
+        android:text="-----------"
+        android:layout_below="@+id/t"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/coin"
+        android:textSize="16dp"
+        android:gravity="right"
+        android:text="-----------"
+        android:layout_below="@+id/w"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Button"
+        android:id="@+id/button"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
+
+
 </RelativeLayout>

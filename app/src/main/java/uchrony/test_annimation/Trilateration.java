@@ -19,17 +19,21 @@ public class Trilateration {
         this.positionBeaconA = positionBeaconA;
         this.positionBeaconB = positionBeaconB;
         this.positionBeaconC = positionBeaconC;
+
+        this.distanceBeaconA = 0;
+        this.distanceBeaconB = 0;
+        this.distanceBeaconC = 0;
     }
 
-    public void setDistanceBeaconA(double distanceBeaconA) {
+    public void setDistanceBeaconXDQW(double distanceBeaconA) {
         this.distanceBeaconA = distanceBeaconA;
     }
 
-    public void setDistanceBeaconB(double distanceBeaconB) {
+    public void setDistanceBeaconTOYZ(double distanceBeaconB) {
         this.distanceBeaconB = distanceBeaconB;
     }
 
-    public void setDistanceBeaconC(double distanceBeaconC) {
+    public void setDistanceBeaconWMKW(double distanceBeaconC) {
         this.distanceBeaconC = distanceBeaconC;
     }
 
