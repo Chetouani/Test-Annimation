@@ -59,5 +59,31 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true" />
 
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:ems="10"
+        android:id="@+id/var1"
+        android:layout_centerVertical="true" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:ems="10"
+        android:id="@+id/var2"
+        android:layout_below="@+id/var1"
+        android:layout_alignEnd="@+id/var1" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VALIDER"
+        android:id="@+id/valider"
+        android:layout_alignBottom="@+id/img"
+        android:layout_alignEnd="@+id/var2" />
+
 
 </RelativeLayout>

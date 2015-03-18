@@ -17,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,6 +33,8 @@ import com.kontakt.sdk.android.manager.BeaconManager;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 
@@ -53,11 +56,20 @@ public class MainActivity extends ActionBarActivity {
     private PlanPiece planPiece;
 
     TextView x,t,w,coin;
+    EditText var1,var2;
     ImageView drawingImageView;
-    Button bt;
+    Button bt,valider;
     Canvas canvas;
     long i=1;
+    String textMessage="";
 
+    private Timer timer;
+    private TimerTask tacheTimer;
+    private int intervalTemps = 20 * 1000;
+    private boolean cancelTimer = false;
+
+    private double VAR1 = 0.89976;
+    private double VAR2 = 7.7095;
     private Trilateration trilateration;
 
     @Override
@@ -122,6 +134,7 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     protected void onDestroy() {
+        sendEmail();
         super.onDestroy();
         stopScan();
         beaconManager.disconnect();
@@ -238,8 +251,8 @@ public class MainActivity extends ActionBarActivity {
                 UUID.fromString("F7826DA6-4FA2-4E98-8024-BC5B71E0893E")));
         // trie la liste de beacons par ordre croisant sur la distance
         beaconManager.setDistanceSort(BeaconDevice.DistanceSort.ASC);
-        //beaconManager.setForceScanConfiguration(new ForceScanConfiguration(5000, 5000));
-        beaconManager.setScanMode(BeaconManager.SCAN_MODE_LOW_LATENCY);
+        beaconManager.setForceScanConfiguration(new ForceScanConfiguration(5000, 300));
+        //beaconManager.setScanMode(BeaconManager.SCAN_MODE_LOW_LATENCY);
 
         // implement la méthode qui vas être appelé chaque fois que des beacons
         // sont trouvé
@@ -249,15 +262,7 @@ public class MainActivity extends ActionBarActivity {
                 // si il y'a au moins un beacon trouvé..
                 runOnUiThread(new Runnable() {
                     public void run() {
-
-                        if (distancesX.size() > 10) {
-                            distancesX.clear();
-                            distancesW.clear();
-                            distancesT.clear();
-                        }
-
                         if (beaconDevices.size() >0 && enCoursDeScan) {
-                            boolean A = false ,B= false ,C= false;
                             for (BeaconDevice bd : beaconDevices) {
                                 if (bd.getBeaconUniqueId().equals("xdQW")){
                                     distancesX.add(bd.getAccuracy()*100);
@@ -266,8 +271,9 @@ public class MainActivity extends ActionBarActivity {
                                         total += note;
                                     }
                                     double moyenne = total / distancesX.size();
-                                    trilateration.setDistanceBeaconXDQW(moyenne);
-                                    x.setText("xdQW = "+bd.getAccuracy()*100+"\n");
+                                    trilateration.setDistanceBeaconXDQW(getDistance(bd.getTxPower(),bd.getRssi()));
+                                    x.setText("xdQW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n");
+                                    textMessage +="xdQW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n";
                                 }
                                 if (bd.getBeaconUniqueId().equals("TOyZ")){
                                     distancesT.add(bd.getAccuracy()*100);
@@ -276,23 +282,26 @@ public class MainActivity extends ActionBarActivity {
                                         total += note;
                                     }
                                     double moyenne = total / distancesT.size();
-                                    trilateration.setDistanceBeaconTOYZ(moyenne);
-                                    t.setText("TOyZ = "+bd.getAccuracy()*100+"\n");
+                                    trilateration.setDistanceBeaconTOYZ(getDistance(bd.getTxPower(),bd.getRssi()));
+                                    t.setText("TOyZ = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n");
+                                    textMessage +="TOyZ = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n";
                                 }
                                 if (bd.getBeaconUniqueId().equals("WMkW")){
                                     distancesW.add(bd.getAccuracy()*100);
-                                    double total = 0;
+                                     double total = 0;
                                     for (Double note : distancesW) {
                                         total += note;
                                     }
                                     double moyenne = total / distancesW.size();
-                                    trilateration.setDistanceBeaconWMKW(moyenne);
-                                    w.setText("WMkW = "+bd.getAccuracy()*100+"\n");
+                                    trilateration.setDistanceBeaconWMKW(getDistance(bd.getTxPower(),bd.getRssi()));
+                                    w.setText("WMkW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n");
+                                    textMessage +="WMkW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n";
                                 }
                             }
                             Point pGsm = trilateration.getPositionGsm();
                             afficherPlan(pGsm);
                             coin.setText("X " + pGsm.x + " Y " + pGsm.y + "\n");
+                            textMessage +="X " + pGsm.x + " Y " + pGsm.y + "\n\n";
                             switch (planPiece.getPositionCoin(pGsm)) {
                                 case COIN_BAS_DROITE:  coin.append("COIN_BAS_DROITE"); break;
                                 case COIN_BAS_GAUCHE:  coin.append("COIN_BAS_GAUCHE"); break;
@@ -302,16 +311,6 @@ public class MainActivity extends ActionBarActivity {
                             coin.append(""+beaconDevices.size());
                             Log.d(TAG_DEBUG,"X "+pGsm.x+" Y "+pGsm.y);
                         }
-
-                    /*A = B = C = true;
-                    trilateration.setDistanceBeaconXDQW(477);
-                    trilateration.setDistanceBeaconTOYZ(250);
-                    trilateration.setDistanceBeaconWMKW(691);
-                    if (A && B && C) {
-                        Point pGsm = trilateration.getPositionGsm();
-                        afficherPlan(pGsm);
-                        Log.d(TAG_DEBUG,"X "+pGsm.x+" Y "+pGsm.y);
-                    }*/
                     }
                 });
             }
@@ -338,6 +337,20 @@ public class MainActivity extends ActionBarActivity {
         t = (TextView) findViewById(R.id.t);
         coin = (TextView) findViewById(R.id.coin);
 
+        var1 = (EditText) findViewById(R.id.var1);
+        var2 = (EditText) findViewById(R.id.var2);
+        valider = (Button) findViewById(R.id.valider);
+        valider.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                VAR1 =  Double.parseDouble(var1.getText().toString());
+                VAR2 =  Double.parseDouble(var2.getText().toString());
+            }
+        });
+        var1.setText(String.valueOf(VAR1));
+        var2.setText(String.valueOf(VAR2));
+
+
         bt = (Button) findViewById(R.id.button);
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -363,7 +376,7 @@ public class MainActivity extends ActionBarActivity {
      */
     private void startScan() {
         try {
-            beaconManager.startRanging(listeRegion);
+            beaconManager.startRanging();
             enCoursDeScan = true;
             Log.d(TAG_DEBUG,"Start Scan");
         } catch (RemoteException e) {
@@ -378,5 +391,33 @@ public class MainActivity extends ActionBarActivity {
         beaconManager.stopRanging();
         enCoursDeScan = false;
         Log.d(TAG_DEBUG,"Stop Scan");
+    }
+
+    private double getDistance(int txPower, double rssi) {
+        double ratio = rssi * 1.0 /txPower;
+        if (ratio < 1.0) {
+            return Math.pow(ratio,10);
+        } else {
+            return ((VAR1) * Math.pow(ratio,VAR2) + 0.111)*100;
+        }
+    }
+
+    public void sendEmail() {
+        String to = "abdel@uchrony.be";
+        String subject = "Info trilateration";
+        String message = textMessage;
+        //String toCc = "email de destinataire en CC";
+        //String toCci = "email de destinataire en CCi";
+        Intent email = new Intent(Intent.ACTION_SEND);
+        email.putExtra(Intent.EXTRA_EMAIL, new String[]{ to});
+        //email.putExtra(Intent.EXTRA_CC, new String[]{ toCc});
+        //email.putExtra(Intent.EXTRA_BCC, new String[]{toCci});
+        //email.putExtra(Intent.EXTRA_STREAM, "file:///sdcard/file.pdf");
+        email.putExtra(Intent.EXTRA_SUBJECT, subject);
+        email.putExtra(Intent.EXTRA_TEXT, message);
+
+        email.setType("message/rfc822");
+
+        startActivity(Intent.createChooser(email, "Choisissez un client de messagerie:"));
     }
 }
