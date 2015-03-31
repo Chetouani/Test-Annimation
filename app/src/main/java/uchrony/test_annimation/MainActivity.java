@@ -12,6 +12,7 @@ import android.graphics.Point;
 import android.os.RemoteException;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import android.os.Handler;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -53,9 +55,10 @@ public class MainActivity extends ActionBarActivity {
     private List<Double> distancesX = new ArrayList<>();
     private List<Double> distancesW = new ArrayList<>();
     private List<Double> distancesT = new ArrayList<>();
+    List<Point> listePosition;
     private PlanPiece planPiece;
-
-    TextView x,t,w,coin;
+    private PlanPieceQuatre planPieceQuatre;
+    public TextView x,t,w,coin,z;
     EditText var1,var2;
     ImageView drawingImageView;
     Button bt,valider;
@@ -63,26 +66,27 @@ public class MainActivity extends ActionBarActivity {
     long i=1;
     String textMessage="";
 
-    private Timer timer;
-    private TimerTask tacheTimer;
-    private int intervalTemps = 20 * 1000;
-    private boolean cancelTimer = false;
 
     private double VAR1 = 0.89976;
     private double VAR2 = 7.7095;
+    private static int TAILLE_LISTE = 0;
     private Trilateration trilateration;
+    private QuadriLateration quadriLateration;
+
+    long lastUpdate=-1;
+    long curtime=-1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initElements();
-        afficherPlan(null);
+        afficherPlan(null,null);
         initBeacon();
         verificationBluetooth();
     }
 
-    private void afficherPlan(Point position) {
+    private void afficherPlan(Point position,PlanPieceQuatre.Coin coin) {
         drawingImageView = (ImageView) this.findViewById(R.id.img);
         Bitmap bitmap = Bitmap.createBitmap((int) getWindowManager()
                 .getDefaultDisplay().getWidth(), (int) getWindowManager()
@@ -96,45 +100,89 @@ public class MainActivity extends ActionBarActivity {
         rectanglePiece.setStyle(Paint.Style.STROKE);
         rectanglePiece.setStrokeWidth(10);
 
-        canvas.drawRect(planPiece.getCoinSupGauche().x
-                        ,planPiece.getCoinSupGauche().y
-                        ,planPiece.getCoinInfDroite().x
-                        ,planPiece.getCoinInfDroite().y
+        canvas.drawRect(planPieceQuatre.getPositionBeaconA().x
+                        ,planPieceQuatre.getPositionBeaconA().y
+                        ,planPieceQuatre.getPositionBeaconD().x
+                        ,planPieceQuatre.getPositionBeaconD().y
                         ,rectanglePiece);
 
-        canvas.drawLine(planPiece.getCentreDeLaPiece().x
-                        ,planPiece.getCoinSupGauche().y
-                        ,planPiece.getCentreDeLaPiece().x
-                        ,planPiece.getCoinInfDroite().y,rectanglePiece);
-        canvas.drawLine(planPiece.getCoinSupGauche().x
-                ,planPiece.getCentreDeLaPiece().y
-                ,planPiece.getCoinInfDroite().x
-                ,planPiece.getCentreDeLaPiece().y,rectanglePiece);
+        canvas.drawLine(planPieceQuatre.getCentreDeLaPiece().x
+                , planPieceQuatre.getPositionBeaconA().y
+                , planPieceQuatre.getCentreDeLaPiece().x
+                , planPieceQuatre.getPositionBeaconD().y, rectanglePiece);
+        canvas.drawLine(planPieceQuatre.getPositionBeaconA().x
+                ,planPieceQuatre.getCentreDeLaPiece().y
+                ,planPieceQuatre.getPositionBeaconD().x
+                ,planPieceQuatre.getCentreDeLaPiece().y,rectanglePiece);
 
         Paint pointBeacon = new Paint();
         pointBeacon.setColor(Color.GREEN);
         pointBeacon.setStrokeWidth(50);
 
-        canvas.drawCircle( planPiece.getPositionBeaconXDQW().x
-                        ,  planPiece.getPositionBeaconXDQW().y, 30, pointBeacon);
-        canvas.drawCircle( planPiece.getPositionBeaconT0YZ().x
-                        ,  planPiece.getPositionBeaconT0YZ().y, 30, pointBeacon);
-        canvas.drawCircle( planPiece.getPositionBeaconWMKW().x
-                        ,  planPiece.getPositionBeaconWMKW().y, 30, pointBeacon);
+        canvas.drawCircle(planPieceQuatre.getPositionBeaconA().x
+                         , planPieceQuatre.getPositionBeaconA().y, 30, pointBeacon);
+        canvas.drawCircle( planPieceQuatre.getPositionBeaconB().x
+                        ,  planPieceQuatre.getPositionBeaconB().y, 30, pointBeacon);
+        canvas.drawCircle( planPieceQuatre.getPositionBeaconC().x
+                        ,  planPieceQuatre.getPositionBeaconC().y, 30, pointBeacon);
+        canvas.drawCircle( planPieceQuatre.getPositionBeaconD().x
+                        ,  planPieceQuatre.getPositionBeaconD().y, 30, pointBeacon);
 
         if (position != null) {
-            Paint pointRouge = new Paint();
-            pointRouge.setColor(Color.RED);
-            pointRouge.setStrokeWidth(50);
+            // Rectangle
+            Paint rectangleCoin = new Paint();
+            rectangleCoin.setColor(Color.RED);
+            rectangleCoin.setStyle(Paint.Style.FILL);
+            rectangleCoin.setStrokeWidth(10);
 
-            canvas.drawCircle( position.x, position.y, 30, pointRouge);
+            Paint pointRouge = new Paint();
+            pointRouge.setColor(Color.BLUE);
+            pointRouge.setStrokeWidth(10);
+
+            for (Point p : listePosition)
+                canvas.drawCircle(p.x, p.y, 10, pointRouge);
+
+            /*if (coin == PlanPiece.Coin.COIN_HAUT_GAUCHE) {
+                canvas.drawRect(planPiece.getCoinSupGauche().x
+                        , planPiece.getCoinSupGauche().y
+                        , planPiece.getCentreDeLaPiece().x
+                        , planPiece.getCentreDeLaPiece().y
+                        , rectangleCoin);
+            }
+            if (coin == PlanPiece.Coin.COIN_HAUT_DROITE) {
+                canvas.drawRect(planPiece.getCentreDeLaPiece().x
+                        , planPiece.getCoinSupGauche().y
+                        , planPiece.getCoinInfDroite().x
+                        , planPiece.getCentreDeLaPiece().y
+                        , rectangleCoin);
+            }
+            if (coin == PlanPiece.Coin.COIN_BAS_GAUCHE) {
+                canvas.drawRect(planPiece.getCoinSupGauche().x
+                        , planPiece.getCentreDeLaPiece().y
+                        , planPiece.getCentreDeLaPiece().x
+                        , planPiece.getCoinInfDroite().y
+                        , rectangleCoin);
+            }
+            if (coin == PlanPiece.Coin.COIN_BAS_DROITE) {
+                canvas.drawRect(planPiece.getCentreDeLaPiece().x
+                        , planPiece.getCentreDeLaPiece().y
+                        , planPiece.getCoinInfDroite().x
+                        , planPiece.getCoinInfDroite().y
+                        , rectangleCoin);
+            }
+
+            } else {
+                pointRouge.setColor(Color.RED);
+                pointRouge.setStrokeWidth(50);
+                canvas.drawCircle(0,0, 30, pointRouge);
+            }*/
         }
     }
 
 
     @Override
     protected void onDestroy() {
-        sendEmail();
+       // sendEmail();
         super.onDestroy();
         stopScan();
         beaconManager.disconnect();
@@ -155,6 +203,7 @@ public class MainActivity extends ActionBarActivity {
             startScan();
         }
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -250,9 +299,10 @@ public class MainActivity extends ActionBarActivity {
         beaconManager.addFilter(Filters.newProximityUUIDFilter(
                 UUID.fromString("F7826DA6-4FA2-4E98-8024-BC5B71E0893E")));
         // trie la liste de beacons par ordre croisant sur la distance
-        beaconManager.setDistanceSort(BeaconDevice.DistanceSort.ASC);
-        beaconManager.setForceScanConfiguration(new ForceScanConfiguration(5000, 300));
-        //beaconManager.setScanMode(BeaconManager.SCAN_MODE_LOW_LATENCY);
+        //beaconManager.setDistanceSort(BeaconDevice.DistanceSort.ASC);
+        beaconManager.setScanMode(BeaconManager.SCAN_MODE_LOW_LATENCY);
+
+       // beaconManager.setForceScanConfiguration(new ForceScanConfiguration(1000*60*2,1000));
 
         // implement la méthode qui vas être appelé chaque fois que des beacons
         // sont trouvé
@@ -262,59 +312,143 @@ public class MainActivity extends ActionBarActivity {
                 // si il y'a au moins un beacon trouvé..
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        if (beaconDevices.size() >0 && enCoursDeScan) {
+                        if (beaconDevices.size() >= 4 && enCoursDeScan) {
                             for (BeaconDevice bd : beaconDevices) {
-                                if (bd.getBeaconUniqueId().equals("xdQW")){
-                                    distancesX.add(bd.getAccuracy()*100);
-                                    double total = 0;
-                                    for (Double note : distancesX) {
-                                        total += note;
-                                    }
-                                    double moyenne = total / distancesX.size();
-                                    trilateration.setDistanceBeaconXDQW(getDistance(bd.getTxPower(),bd.getRssi()));
-                                    x.setText("xdQW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n");
-                                    textMessage +="xdQW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n";
+                                if (bd.getBeaconUniqueId().equals("TOyZ") && bd.getAccuracy()*100 >1){
+                                    //trilateration.setDistanceBeaconXDQW(bd.getAccuracy() * 100);
+                                    quadriLateration.setDistanceBeaconA(bd.getAccuracy()*100);
+                                    x.setText("A " + bd.getAccuracy() * 100 + "\n");
                                 }
-                                if (bd.getBeaconUniqueId().equals("TOyZ")){
-                                    distancesT.add(bd.getAccuracy()*100);
-                                    double total = 0;
-                                    for (Double note : distancesT) {
-                                        total += note;
-                                    }
-                                    double moyenne = total / distancesT.size();
-                                    trilateration.setDistanceBeaconTOYZ(getDistance(bd.getTxPower(),bd.getRssi()));
-                                    t.setText("TOyZ = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n");
-                                    textMessage +="TOyZ = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n";
+                                if (bd.getBeaconUniqueId().equals("xdQW") && bd.getAccuracy()*100 >1){
+                                    //trilateration.setDistanceBeaconTOYZ(bd.getAccuracy() * 100);
+                                    quadriLateration.setDistanceBeaconB(bd.getAccuracy() * 100);
+                                    t.setText("B " + bd.getAccuracy() * 100 + "\n");
                                 }
-                                if (bd.getBeaconUniqueId().equals("WMkW")){
-                                    distancesW.add(bd.getAccuracy()*100);
-                                     double total = 0;
-                                    for (Double note : distancesW) {
-                                        total += note;
-                                    }
-                                    double moyenne = total / distancesW.size();
-                                    trilateration.setDistanceBeaconWMKW(getDistance(bd.getTxPower(),bd.getRssi()));
-                                    w.setText("WMkW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n");
-                                    textMessage +="WMkW = "+getDistance(bd.getTxPower(),bd.getRssi())+"\n";
+                                if (bd.getBeaconUniqueId().equals("WMkW") && bd.getAccuracy()*100 >1){
+                                    //trilateration.setDistanceBeaconWMKW(bd.getAccuracy() * 100);
+                                    quadriLateration.setDistanceBeaconC(bd.getAccuracy() * 100);
+                                    w.setText("C " + bd.getAccuracy() * 100 + "\n");
+                                }
+                                if (bd.getBeaconUniqueId().equals("4mQm") && bd.getAccuracy()*100 >1){
+                                    //trilateration.setDistanceBeaconWMKW(bd.getAccuracy() * 100);
+                                    quadriLateration.setDistanceBeaconD(bd.getAccuracy() * 100);
+                                    z.setText("D " + bd.getAccuracy() * 100 + "\n");
                                 }
                             }
-                            Point pGsm = trilateration.getPositionGsm();
-                            afficherPlan(pGsm);
-                            coin.setText("X " + pGsm.x + " Y " + pGsm.y + "\n");
-                            textMessage +="X " + pGsm.x + " Y " + pGsm.y + "\n\n";
-                            switch (planPiece.getPositionCoin(pGsm)) {
-                                case COIN_BAS_DROITE:  coin.append("COIN_BAS_DROITE"); break;
-                                case COIN_BAS_GAUCHE:  coin.append("COIN_BAS_GAUCHE"); break;
-                                case COIN_HAUT_DROITE: coin.append("COIN_HAUT_DROITE"); break;
-                                case COIN_HAUT_GAUCHE: coin.append("COIN_HAUT_GAUCHE"); break;
-                            }
-                            coin.append(""+beaconDevices.size());
-                            Log.d(TAG_DEBUG,"X "+pGsm.x+" Y "+pGsm.y);
                         }
-                    }
+                   }
                 });
             }
         });
+    }
+
+    Timer timer;
+    TimerTask timerTask;
+    final Handler handler = new Handler();
+
+
+
+
+    private void calculerPoint() {
+        /*if (distancesX.size() > TAILLE_LISTE && distancesT.size() > TAILLE_LISTE && distancesW.size() > TAILLE_LISTE ) {
+            double totalX = 0;
+            for (Double note : distancesX) {
+                totalX += note;
+            }
+            double moyenneX = totalX / distancesX.size();
+            trilateration.setDistanceBeaconXDQW(moyenneX);
+
+            double totalT = 0;
+            for (Double note : distancesT) {
+                totalT += note;
+            }
+            double moyenneT = totalT / distancesT.size();
+            trilateration.setDistanceBeaconTOYZ(moyenneT);
+
+            double totalW = 0;
+            for (Double note : distancesW) {
+                totalW += note;
+            }
+            double moyenneW = totalW / distancesW.size();
+            trilateration.setDistanceBeaconWMKW(moyenneW);
+
+            Point pGsm = trilateration.getPositionGsm();
+
+            x.setText("xdQW = " + moyenneX + "\n");
+            textMessage +="xdQW = "+moyenneX+"\n";
+            t.setText("TOYZ = " + moyenneT + "\n");
+            textMessage +="TOYZ = "+moyenneT+"\n";
+            w.setText("WMKW = " + moyenneW + "\n");
+            textMessage +="WMKW = "+moyenneW+"\n";
+            if (pGsm != null) {
+                coin.setText("X " + pGsm.x + " Y " + pGsm.y + "\n");
+                Time today = new Time(Time.getCurrentTimezone());
+                today.setToNow();
+                textMessage += today.format("%k:%M:%S") + "\n";
+                textMessage += "X " + pGsm.x + " Y " + pGsm.y + "\n\n";
+                switch (planPiece.getPositionCoin(pGsm)) {
+                    case COIN_BAS_DROITE:
+                        afficherPlan(pGsm, PlanPiece.Coin.COIN_BAS_DROITE);
+                        break;
+                    case COIN_BAS_GAUCHE:
+                        afficherPlan(pGsm, PlanPiece.Coin.COIN_BAS_GAUCHE);
+                        break;
+                    case COIN_HAUT_DROITE:
+                        afficherPlan(pGsm, PlanPiece.Coin.COIN_HAUT_DROITE);
+                        break;
+                    case COIN_HAUT_GAUCHE:
+                        afficherPlan(pGsm, PlanPiece.Coin.COIN_HAUT_GAUCHE);
+                        break;
+                }
+                Log.d(TAG_DEBUG, "X " + pGsm.x + " Y " + pGsm.y);
+            } else {
+                coin.setText("X = null Y = null\n");
+                textMessage += "X = null Y = null\n\n";
+            }
+
+            distancesX.clear();
+            distancesW.clear();
+            distancesT.clear();
+        }*/
+
+        //Point pGsm = trilateration.getPositionGsm();
+        Point pGsm = quadriLateration.getPositionGsm();
+
+        if (pGsm != null) {
+            /*if (pGsm.x < planPiece.getCoinSupGauche().x)
+                pGsm.x = Math.abs(pGsm.x);
+            if (pGsm.y < planPiece.getCoinSupGauche().y)
+                pGsm.y = Math.abs(pGsm.y);
+            if (pGsm.x > planPiece.getCoinInfDroite().x)
+                pGsm.x = planPiece.getCoinInfDroite().x - (pGsm.x - planPiece.getCoinInfDroite().x);
+            if (pGsm.y > planPiece.getCoinInfDroite().y)
+                pGsm.y = planPiece.getCoinInfDroite().y - (pGsm.y - planPiece.getCoinInfDroite().y);*/
+
+            coin.setText("X " + pGsm.x + " Y " + pGsm.y + "\n");
+            Time today = new Time(Time.getCurrentTimezone());
+            today.setToNow();
+            textMessage += today.format("%k:%M:%S") + "\n";
+            textMessage += "X " + pGsm.x + " Y " + pGsm.y + "\n\n";
+            listePosition.add(pGsm);
+            switch (planPieceQuatre.getPositionCoin(pGsm)) {
+                case COIN_BAS_DROITE:
+                    afficherPlan(pGsm, PlanPieceQuatre.Coin.COIN_BAS_DROITE);
+                    break;
+                case COIN_BAS_GAUCHE:
+                    afficherPlan(pGsm, PlanPieceQuatre.Coin.COIN_BAS_GAUCHE);
+                    break;
+                case COIN_HAUT_DROITE:
+                    afficherPlan(pGsm, PlanPieceQuatre.Coin.COIN_HAUT_DROITE);
+                    break;
+                case COIN_HAUT_GAUCHE:
+                    afficherPlan(pGsm, PlanPieceQuatre.Coin.COIN_HAUT_GAUCHE);
+                    break;
+            }
+            Log.d(TAG_DEBUG, "X " + pGsm.x + " Y " + pGsm.y);
+        } else {
+            coin.setText("X = null Y = null\n");
+            textMessage += "X = null Y = null\n\n";
+        }
     }
 
     /**
@@ -324,17 +458,21 @@ public class MainActivity extends ActionBarActivity {
     private void initElements() {
         //getSupportActionBar().setBackgroundDrawable(
         //        new ColorDrawable(getResources().getColor(R.color.Orange)));
-        planPiece = new PlanPiece(new Point(0,0), new Point(500,477));
-        planPiece.setPositionBeaconXDQW(new Point(0,0));
-        planPiece.setPositionBeaconT0YZ(new Point(250,477));
-        planPiece.setPositionBeaconWMKW(new Point(500,0));
+        planPieceQuatre = new PlanPieceQuatre(new Point(0,0), new Point(500,477));
+        planPieceQuatre.setPositionBeaconA(new Point(0, 0));
+        planPieceQuatre.setPositionBeaconB(new Point(0, 477));
+        planPieceQuatre.setPositionBeaconC(new Point(500, 0));
+        planPieceQuatre.setPositionBeaconD(new Point(500, 477));
 
-        trilateration = new Trilateration(planPiece.getPositionBeaconXDQW()
+        /*trilateration = new Trilateration(planPiece.getPositionBeaconXDQW()
                                             ,planPiece.getPositionBeaconT0YZ()
-                                            ,planPiece.getPositionBeaconWMKW());
+                                            ,planPiece.getPositionBeaconWMKW());*/
+        quadriLateration = new QuadriLateration(planPieceQuatre.getPositionBeaconA(),planPieceQuatre.getPositionBeaconB()
+                                                ,planPieceQuatre.getPositionBeaconC(),planPieceQuatre.getPositionBeaconD());
         w = (TextView) findViewById(R.id.w);
         x = (TextView) findViewById(R.id.x);
         t = (TextView) findViewById(R.id.t);
+        z = (TextView) findViewById(R.id.z);
         coin = (TextView) findViewById(R.id.coin);
 
         var1 = (EditText) findViewById(R.id.var1);
@@ -343,13 +481,13 @@ public class MainActivity extends ActionBarActivity {
         valider.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                VAR1 =  Double.parseDouble(var1.getText().toString());
-                VAR2 =  Double.parseDouble(var2.getText().toString());
+                //VAR1 =  Double.parseDouble(var1.getText().toString());
+                //VAR2 =  Double.parseDouble(var2.getText().toString());
+                TAILLE_LISTE = Integer.parseInt(var1.getText().toString());
             }
         });
         var1.setText(String.valueOf(VAR1));
         var2.setText(String.valueOf(VAR2));
-
 
         bt = (Button) findViewById(R.id.button);
         bt.setOnClickListener(new View.OnClickListener() {
@@ -361,7 +499,7 @@ public class MainActivity extends ActionBarActivity {
                     startScan();
             }
         });
-
+        listePosition = new ArrayList<>();
         listeRegion = new HashSet<>();
         listeRegion.add(new Region(UUID.fromString("F7826DA6-4FA2-4E98-8024-BC5B71E0893E")
                         ,13714,13269));
@@ -378,9 +516,29 @@ public class MainActivity extends ActionBarActivity {
         try {
             beaconManager.startRanging();
             enCoursDeScan = true;
+            startTimer();
             Log.d(TAG_DEBUG,"Start Scan");
         } catch (RemoteException e) {
             Log.d(TAG_DEBUG,"Erreur de démarrage Scan");
+        }
+    }
+
+    public void startTimer() {
+        //set a new Timer
+        timer = new Timer();
+
+        //initialize the TimerTask's job
+        initializeTimerTask();
+
+        //schedule the timer, after the first 5000ms the TimerTask will run every 10000ms
+        timer.schedule(timerTask, 100, 200); //
+    }
+
+    public void stoptimertask() {
+        //stop the timer, if it's not already null
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
         }
     }
 
@@ -390,9 +548,25 @@ public class MainActivity extends ActionBarActivity {
     private void stopScan() {
         beaconManager.stopRanging();
         enCoursDeScan = false;
+        stoptimertask();
         Log.d(TAG_DEBUG,"Stop Scan");
     }
 
+    public void initializeTimerTask() {
+
+        timerTask = new TimerTask() {
+            public void run() {
+                //use a handler to run a toast that shows the current timestamp
+                handler.post(new Runnable() {
+                    public void run() {
+                        //show the toast
+                        calculerPoint();
+                    }
+                });
+            }
+        };
+    }
+    char b ='a';
     private double getDistance(int txPower, double rssi) {
         double ratio = rssi * 1.0 /txPower;
         if (ratio < 1.0) {
@@ -415,9 +589,7 @@ public class MainActivity extends ActionBarActivity {
         //email.putExtra(Intent.EXTRA_STREAM, "file:///sdcard/file.pdf");
         email.putExtra(Intent.EXTRA_SUBJECT, subject);
         email.putExtra(Intent.EXTRA_TEXT, message);
-
         email.setType("message/rfc822");
-
         startActivity(Intent.createChooser(email, "Choisissez un client de messagerie:"));
     }
 }

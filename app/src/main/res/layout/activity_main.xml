@@ -13,12 +13,24 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:id="@+id/coin"
+        android:textSize="16dp"
+        android:gravity="right"
+        android:text="----------------------------------------------------"
+        android:layout_below="@+id/z"
+        android:singleLine="false"
+        android:layout_alignEnd="@+id/img" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:id="@+id/x"
         android:textSize="16dp"
         android:gravity="right"
         android:text="-----------"
         android:layout_alignTop="@+id/img"
-        android:layout_alignEnd="@+id/img" />
+        android:layout_alignEnd="@+id/img"
+        android:singleLine="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -28,7 +40,8 @@
         android:gravity="right"
         android:text="-----------"
         android:layout_below="@+id/x"
-        android:layout_alignStart="@+id/w" />
+        android:layout_alignStart="@+id/w"
+        android:singleLine="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -38,17 +51,19 @@
         android:gravity="right"
         android:text="-----------"
         android:layout_below="@+id/t"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:singleLine="true" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/coin"
+        android:id="@+id/z"
         android:textSize="16dp"
         android:gravity="right"
         android:text="-----------"
         android:layout_below="@+id/w"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:singleLine="true" />
 
     <Button
         style="?android:attr/buttonStyleSmall"
