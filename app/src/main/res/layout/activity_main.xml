@@ -6,99 +6,68 @@
     android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
 
     <ImageView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:id="@+id/img"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/img" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/coin"
         android:textSize="16dp"
-        android:gravity="right"
+        android:gravity="left"
         android:text="----------------------------------------------------"
-        android:layout_below="@+id/z"
         android:singleLine="false"
-        android:layout_alignEnd="@+id/img" />
+        android:layout_below="@+id/z"
+        android:layout_alignParentEnd="true" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/x"
         android:textSize="16dp"
-        android:gravity="right"
+        android:gravity="left"
         android:text="-----------"
-        android:layout_alignTop="@+id/img"
-        android:layout_alignEnd="@+id/img"
-        android:singleLine="true" />
+        android:singleLine="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignEnd="@+id/t"
+        android:layout_alignStart="@+id/t" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/t"
         android:textSize="16dp"
-        android:gravity="right"
+        android:gravity="left"
         android:text="-----------"
         android:layout_below="@+id/x"
         android:layout_alignStart="@+id/w"
-        android:singleLine="true" />
+        android:singleLine="true"
+        android:layout_alignEnd="@+id/w" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/w"
         android:textSize="16dp"
-        android:gravity="right"
+        android:gravity="left"
         android:text="-----------"
         android:layout_below="@+id/t"
         android:layout_alignParentEnd="true"
-        android:singleLine="true" />
+        android:singleLine="true"
+        android:layout_alignStart="@+id/z" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/z"
         android:textSize="16dp"
-        android:gravity="right"
+        android:gravity="left"
         android:text="-----------"
         android:layout_below="@+id/w"
         android:layout_alignParentEnd="true"
-        android:singleLine="true" />
-
-    <Button
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="New Button"
-        android:id="@+id/button"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
-
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:ems="10"
-        android:id="@+id/var1"
-        android:layout_centerVertical="true" />
-
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:ems="10"
-        android:id="@+id/var2"
-        android:layout_below="@+id/var1"
-        android:layout_alignEnd="@+id/var1" />
-
-    <Button
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="VALIDER"
-        android:id="@+id/valider"
-        android:layout_alignBottom="@+id/img"
-        android:layout_alignEnd="@+id/var2" />
+        android:singleLine="true"
+        android:layout_alignStart="@+id/coin" />
 
 
 </RelativeLayout>
